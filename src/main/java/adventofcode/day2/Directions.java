@@ -15,7 +15,17 @@ public class Directions {
             commands.add(new Command(scanner.next(), scanner.nextInt()));
         }
 
-        Position finalPosition = commands.stream().reduce(new Position(0, 0, 0),
+        Position finalPosition1 = commands.stream().reduce(new Position(0, 0, 0),
+                (position, command) -> switch(command.command()){
+                    case "forward" -> position.add(new Position(command.value, 0, 0));
+                    case "down" -> position.add(new Position(0, command.value, 0));
+                    case "up" -> position.add(new Position(0, -command.value, 0));
+                    default -> throw new IllegalStateException("Unexpected value: " + command.command());
+                },
+                Position::add);
+        System.out.println(finalPosition1.x * finalPosition1.y);
+
+        Position finalPosition2 = commands.stream().reduce(new Position(0, 0, 0),
                 (position, command) -> switch(command.command()){
                     case "forward" -> position.forward(command.value);
                     case "down" -> position.down(command.value);
@@ -23,8 +33,7 @@ public class Directions {
                     default -> throw new IllegalStateException("Unexpected value: " + command.command());
                 },
                 Position::add);
-
-        System.out.println(finalPosition.x * finalPosition.y);
+        System.out.println(finalPosition2.x * finalPosition2.y);
     }
 
     record Command(String command, int value){}
