@@ -1,12 +1,13 @@
 package adventofcode.day9;
 
-import java.io.InputStream;
+import adventofcode.Util;
+
 import java.util.*;
 import java.util.stream.Stream;
 
 public class SmokeBasin {
     public static void main(String[] args) {
-        int[][] map = getData();
+        int[][] map = Util.getMatrix(SmokeBasin.class.getResourceAsStream("input.txt"));
 
         int maxY = map.length;
         int maxX = map[0].length;
@@ -73,23 +74,6 @@ public class SmokeBasin {
         return point.x() >= 0 && point.x() < maxX && point.y() >= 0 && point.y() < maxY;
     }
 
-    private static int[][] getData() {
-        InputStream inputStream = SmokeBasin.class.getResourceAsStream("input.txt");
-        List<String> raw = new ArrayList<>();
-        Scanner scanner = new Scanner(inputStream);
-        while (scanner.hasNextLine()) {
-            raw.add(scanner.nextLine());
-        }
-        int maxX = raw.get(0).length();
-        int maxY = raw.size();
-        int[][] map = new int[maxY][maxX];
-        for (int y = 0; y < maxY; y++) {
-            for (int x = 0; x < maxX; x++) {
-                map[y][x] = Integer.parseInt(String.valueOf(raw.get(y).charAt(x)));
-            }
-        }
-        return map;
-    }
 
     record Point(int x, int y) {
     }
