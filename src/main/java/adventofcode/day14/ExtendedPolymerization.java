@@ -1,56 +1,69 @@
 package adventofcode.day14;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.reducing;
 
 public class ExtendedPolymerization {
     public static void main(String[] args) {
         InputStream inputStream = ExtendedPolymerization.class.getResourceAsStream("input.txt");
         Scanner scanner = new Scanner(inputStream);
-        Map<String, Pairs> extensionMap = new HashMap<>();
+        Map<String, Pairs> extensionMapping = new HashMap<>();
         String polymer = scanner.nextLine();
         scanner.nextLine();
         while (scanner.hasNextLine()) {
             String[] values = scanner.nextLine().split(" -> ");
             String pair = values[0];
-            extensionMap.put(pair, new Pairs(pair.charAt(0) + values[1], values[1] + pair.charAt(1)));
+            extensionMapping.put(pair, new Pairs(pair.charAt(0) + values[1], values[1] + pair.charAt(1)));
         }
 
-        Map<String, Long> pairsCounters = new HashMap<>();
-
-        long start = System.currentTimeMillis();
-        List<String> initialPairs = IntStream.range(1, polymer.length())
+        Map<String, Long> pairCounters = IntStream.range(1, polymer.length())
                 .mapToObj(index -> String.valueOf(polymer.charAt(index - 1)) + polymer.charAt(index))
-                .toList();
-        initialPairs.forEach(pair -> countCharacters(pair, pairsCounters, extensionMap, 1, 30));
+                .collect(groupingBy(v -> v, reducing(0L, v -> 1L, Long::sum)));
 
-        long seconds = (System.currentTimeMillis() - start)/1000;
-        System.out.println("Done in seconds:" + seconds);
-//        var maxEntry = charactersMap.entrySet().stream().max(Map.Entry.comparingByValue()).get();
-//        var minEntry = charactersMap.entrySet().stream().min(Map.Entry.comparingByValue()).get();
-//        System.out.println("max: " + maxEntry.getKey() + " " + maxEntry.getValue());
-//        System.out.println("min: " + minEntry.getKey() + " " + minEntry.getValue());
-//        System.out.println(maxEntry.getValue() - minEntry.getValue());
+        for(int i=0; i< 40; i++) {
+            pairCounters = getNewPairs(pairCounters, extensionMapping);
+        }
+
+        Map<Character, Long> charactersMap = countCharacters(polymer, pairCounters);
+
+        var maxEntry = charactersMap.entrySet().stream().max(Map.Entry.comparingByValue()).get();
+        var minEntry = charactersMap.entrySet().stream().min(Map.Entry.comparingByValue()).get();
+        System.out.println("max: " + maxEntry.getKey() + " " + maxEntry.getValue());
+        System.out.println("min: " + minEntry.getKey() + " " + minEntry.getValue());
+        System.out.println(maxEntry.getValue() - minEntry.getValue());
     }
 
-    private static void countCharacters(String pair,
-                                        Map<String, Long> pairsCounters,
-                                        Map<String, Pairs> extensionMap,
-                                        int stepNo,
-                                        int maxSteps) {
+    private static Map<Character, Long> countCharacters(String polymer, Map<String, Long> pairCounters) {
+        Set<Character> allCharacters = pairCounters.keySet().stream()
+                .flatMap(v -> v.chars().mapToObj(c -> (char) c))
+                .collect(Collectors.toSet());
+        Map<Character, Long> charactersMap = new HashMap<>();
+        for (Character character : allCharacters) {
+            long characterCounter = polymer.endsWith(String.valueOf(character)) ? 1 : 0;
+            for (Map.Entry<String, Long> entry : pairCounters.entrySet()) {
+                if (entry.getKey().charAt(0) == character) {
+                    characterCounter = characterCounter + entry.getValue();
+                }
+            }
+            charactersMap.put(character, characterCounter);
+        }
+        return charactersMap;
+    }
 
-        long value = pairsCounters.getOrDefault(pair, 0l) + 1;
-        pairsCounters.put(pair, value);
-        Pairs newPairs = extensionMap.get(pair);
-        if (newPairs == null) return;
-        if (stepNo == maxSteps) return;
-        stepNo = stepNo + 1;
-        countCharacters(newPairs.a(), pairsCounters, extensionMap, stepNo, maxSteps);
-        countCharacters(newPairs.b(), pairsCounters, extensionMap, stepNo, maxSteps);
+    private static Map<String, Long> getNewPairs(Map<String, Long> pairCounters, Map<String, Pairs> extensionMap) {
+        Map<String, Long> map = new HashMap<>();
+        for (Map.Entry<String, Long> entry : pairCounters.entrySet()) {
+            Pairs pairs = extensionMap.get(entry.getKey());
+            map.compute(pairs.a(), (key, value) -> value == null ? entry.getValue() : value + entry.getValue());
+            map.compute(pairs.b(), (key, value) -> value == null ? entry.getValue() : value + entry.getValue());
+        }
+        return map;
     }
 
     record Pairs(String a, String b){}
